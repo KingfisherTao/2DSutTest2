@@ -39,7 +39,8 @@ void MainWindow::initPlot()
     // 设置画笔风格
     QPen drawPen;
     drawPen.setColor(Qt::green);
-    drawPen.setWidth(8);
+    drawPen.setWidth(4);
+    drawPen.setStyle(Qt::PenStyle::DashDotDotLine);
 
     // 绘制散点
     QCPGraph * curGraph = ui->QCPlot->addGraph();
@@ -69,13 +70,11 @@ void MainWindow::myMoveEvent(QMouseEvent* me)
     bool isShow = false;
     int index = 0;
     auto data = ui->QCPlot->graph(0)->data();
-    for (int i = 0; i < ui->QCPlot->graph(0)->dataCount(); ++i)
-    {
+    for (int i = 0; i < ui->QCPlot->graph(0)->dataCount(); ++i){
         if (x_val <= data->at(i)->key + 3
                 &&x_val > data->at(i)->key - 3
                 && y_val <= data->at(i)->value + 3
-                && y_val > data->at(i)->value - 3)
-        {
+                && y_val > data->at(i)->value - 3){
             index = i;
             isShow = true;
             break;
@@ -84,7 +83,7 @@ void MainWindow::myMoveEvent(QMouseEvent* me)
 
     if (isShow){
         QString strToolTip = QString("x: %1\ny: %2").arg(QString::number(data->at(index)->key, 10, 2),
-                                                          QString::number(data->at(index)->value, 10, 2));
+                                                         QString::number(data->at(index)->value, 10, 2));
         QToolTip::showText(cursor().pos(), strToolTip, ui->QCPlot);
     }
     else
@@ -107,12 +106,37 @@ void MainWindow::on_Btn_SetWidth_clicked()
 
 void MainWindow::on_Btn_LoadData_clicked()
 {
-    QVector<double> x, y;
-    x << -75 << -50 << -50 << 0 << 50 << 100 << 75;
-    y << -75 << -50 << -25 << 0 << 25 << 50 << 75;
+    QString fileName = QFileDialog::getOpenFileName(this,tr("open a file."),"./",tr("file(*.txt);"));
+    if (fileName.isEmpty()) {
+        QMessageBox::warning(this, "Warning!", "Failed to open the DataFile!");
+    }
+    else {
+        // 数据读取
+        QStringList _list;
+        QFile _file(fileName);
+        if (_file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            _file.seek(0);
+            QTextStream _stream(&_file);
+            while(!_file.atEnd()){
+                _list = _stream.readAll().split("\n");
+            }
+        }
+        _file.close();
 
-    ui->QCPlot->graph(0)->setData(x, y);
-    ui->QCPlot->replot();
+        auto xlist = _list[0].split(",");
+        auto ylist = _list[1].split(",");
+
+        QVector<double> x, y;
+        foreach(auto val, xlist)
+            x << val.toDouble();
+        foreach(auto val, ylist)
+            y << val.toDouble();
+
+//        x << -75 << -50 << -50 << 0 << 50 << 100 << 75;
+//        y << -75 << -50 << -25 << 0 << 25 << 50 << 75;
+        ui->QCPlot->graph(0)->setData(x, y);
+        ui->QCPlot->replot();
+    }
 }
 
 void MainWindow::on_Btn_OpenImg_clicked()
